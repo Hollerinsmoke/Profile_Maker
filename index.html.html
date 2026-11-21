@@ -1,0 +1,1095 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Student Profile Builder</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;600;700&family=Source+Serif+4:opsz,wght@8..60,500;8..60,600;8..60,700&display=swap" rel="stylesheet">
+<style>
+/* Layout: a step rail on the left, one working view at a time, and an A4 paper preview that is also the print target. */
+:root{
+  --bg:#edf1f3; --surface:#ffffff; --surface-2:#f4f7f8; --ink:#13212b; --ink-2:#4a5a66; --line:#d6dee3;
+  --brand:#0d5c6e; --brand-ink:#ffffff; --brand-soft:#dcedf1; --danger:#b3261e; --ok:#1d7a4d;
+  --font-ui:'Inter',system-ui,-apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;
+  --font-head:'Space Grotesk','Inter',system-ui,-apple-system,'Segoe UI',Arial,sans-serif;
+  --font-doc:'Source Serif 4',Georgia,'Times New Roman',serif;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){
+  :root{ --bg:#0d1418; --surface:#141e24; --surface-2:#19262d; --ink:#e6eef2; --ink-2:#9db0bc; --line:#26353e;
+         --brand:#4fb3c9; --brand-ink:#04222a; --brand-soft:#16323b; --danger:#f28b82; --ok:#6fcf97; color-scheme:dark; }
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 var(--font-ui)}
+h1,h2,h3{font-family:var(--font-head);margin:0;letter-spacing:-.01em;text-wrap:balance}
+a{color:inherit}
+
+/* top bar */
+.topbar{max-width:1120px;margin:0 auto;padding:18px max(20px,env(safe-area-inset-right,0px)) 8px max(20px,env(safe-area-inset-left,0px));display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:11px}
+.brand-mark{width:36px;height:36px;border-radius:10px;background:var(--brand);color:var(--brand-ink);display:grid;place-items:center}
+.brand h1{font-size:18px}
+.save-state{font-size:12px;color:var(--ink-2)}
+.save-state.warn{color:var(--danger)}
+.top-actions{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+
+/* shell */
+.shell{max-width:1120px;margin:0 auto;padding:10px max(20px,env(safe-area-inset-right,0px)) 64px max(20px,env(safe-area-inset-left,0px));display:grid;grid-template-columns:232px minmax(0,1fr);gap:30px;align-items:start}
+.rail{position:sticky;top:16px;display:flex;flex-direction:column;gap:2px}
+.rail .grp{font:600 11px var(--font-head);letter-spacing:.12em;text-transform:uppercase;color:var(--ink-2);padding:14px 12px 5px}
+.rail .grp:first-child{padding-top:2px}
+.rail a{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:9px 12px;border-radius:9px;color:var(--ink-2);text-decoration:none;font-weight:500}
+.rail a:hover{background:var(--surface);color:var(--ink)}
+.rail a[aria-current="page"]{background:var(--brand);color:var(--brand-ink)}
+.count{min-width:21px;text-align:center;font:600 11px var(--font-ui);padding:2px 6px;border-radius:999px;background:var(--brand-soft);color:var(--brand)}
+.rail a[aria-current="page"] .count{background:rgba(255,255,255,.22);color:var(--brand-ink)}
+.main{min-width:0}
+
+/* views */
+.view{display:none}
+.view.active{display:block}
+.view-head{margin:0 0 18px}
+.view-head h2{font-size:27px}
+.view-head p{margin:7px 0 0;color:var(--ink-2);max-width:64ch}
+.head-row{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:20px;margin-bottom:16px}
+.card h3{font-size:16px;margin-bottom:4px}
+.hint{color:var(--ink-2);font-size:13px;margin:0 0 14px}
+.notice{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;background:var(--brand-soft);border-radius:12px;padding:14px 16px;margin-bottom:16px}
+.notice div{min-width:0;flex:1 1 280px}
+.notice strong{display:block;font-family:var(--font-head)}
+.notice span{color:var(--ink-2);font-size:13.5px}
+.pager{display:flex;justify-content:space-between;gap:10px;margin-top:22px;flex-wrap:wrap}
+.empty{margin:0 0 12px;padding:22px;border:1px dashed var(--line);border-radius:12px;color:var(--ink-2);text-align:center}
+
+/* forms */
+.fgrid{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:12px 14px}
+.f{grid-column:span 12;min-width:0}
+.f.check{align-self:end}
+@media (min-width:480px){ .s2,.s3,.s4,.s5{grid-column:span 6} }
+@media (min-width:720px){
+  .s2{grid-column:span 2}.s3{grid-column:span 3}.s4{grid-column:span 4}.s5{grid-column:span 5}.s6{grid-column:span 6}
+}
+label{display:block;font-size:12.5px;font-weight:600;color:var(--ink-2);margin-bottom:5px}
+input,select,textarea{width:100%;font:inherit;color:var(--ink);background:var(--surface-2);border:1px solid var(--line);border-radius:9px;padding:9px 11px;min-height:40px}
+textarea{resize:vertical;min-height:88px}
+input:disabled{opacity:.45}
+input[type=checkbox]{width:18px;height:18px;min-height:0;padding:0;accent-color:var(--brand)}
+.check label{display:flex;gap:9px;align-items:center;min-height:40px;margin:0;font-size:14px;font-weight:500;color:var(--ink)}
+input:focus-visible,select:focus-visible,textarea:focus-visible,button:focus-visible,a:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
+.counter{font-size:12px;color:var(--ink-2);text-align:right;margin-top:4px}
+
+.row{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px 18px 18px;margin-bottom:12px}
+.row-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.row-n{font:600 11.5px var(--font-head);letter-spacing:.09em;text-transform:uppercase;color:var(--ink-2)}
+
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;font:600 14px var(--font-ui);border-radius:9px;border:1px solid var(--line);background:var(--surface);color:var(--ink);padding:9px 15px;min-height:40px;cursor:pointer;text-decoration:none}
+.btn:hover{border-color:var(--brand)}
+.btn.primary{background:var(--brand);color:var(--brand-ink);border-color:var(--brand)}
+.btn.primary:hover{filter:brightness(1.1)}
+.btn.add{width:100%;border-style:dashed;color:var(--brand)}
+.btn.danger{color:var(--danger)}
+.btn-row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.link-btn{background:none;border:0;font:600 13px var(--font-ui);color:var(--ink-2);cursor:pointer;padding:5px 8px;border-radius:7px}
+.link-btn:hover{color:var(--ink)}
+.link-btn.danger:hover{color:var(--danger)}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{font:500 13px var(--font-ui);border:1px solid var(--line);background:var(--surface-2);color:var(--ink);border-radius:999px;padding:6px 12px;cursor:pointer}
+.chip:hover{border-color:var(--brand);color:var(--brand)}
+
+.tagbox{display:flex;flex-wrap:wrap;gap:6px;align-items:center;padding:6px;background:var(--surface-2);border:1px solid var(--line);border-radius:9px}
+.tagbox:focus-within{outline:2px solid var(--brand);outline-offset:2px}
+.tagbox input{flex:1 1 140px;min-width:120px;border:0;background:transparent;min-height:30px;padding:4px 6px}
+.tagbox input:focus-visible{outline:none}
+.tags{display:contents}
+.tag{display:inline-flex;align-items:center;gap:2px;background:var(--brand-soft);color:var(--brand);border-radius:999px;padding:3px 3px 3px 11px;font-size:13px;font-weight:500}
+.tag button{border:0;background:none;color:inherit;cursor:pointer;font-size:16px;line-height:1;padding:2px 7px;border-radius:999px}
+
+.photo{display:flex;gap:16px;align-items:center;margin-top:16px;flex-wrap:wrap}
+.photo-box{width:72px;height:96px;border-radius:8px;border:1px dashed var(--line);background:var(--surface-2);display:grid;place-items:center;overflow:hidden;font-size:11px;color:var(--ink-2);text-align:center;flex:none}
+.photo-box img{width:100%;height:100%;object-fit:cover;display:block}
+.photo .hint{margin:8px 0 0;max-width:46ch}
+
+.steps{margin:10px 0 0;padding-left:20px;color:var(--ink-2);font-size:13.5px}
+.steps li{margin-bottom:3px}
+.toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:10px;font-size:13.5px;max-width:calc(100% - 32px);z-index:20}
+
+/* paper preview */
+.paper-wrap{overflow-x:auto;padding-bottom:8px}
+.paper{width:210mm;margin:0 auto;background:#fff;color:#1b2630;padding:15mm;min-height:297mm;box-shadow:0 1px 2px rgba(0,0,0,.1),0 14px 34px rgba(0,0,0,.14)}
+
+.sheet{--p-ink:#1b2630;--p-muted:#5d6d79;--p-line:#cfd8de;--p-brand:#0d5c6e;color:var(--p-ink);font:9.6pt/1.45 var(--font-ui)}
+.sheet h1{font:700 25pt/1.1 var(--font-doc);letter-spacing:-.01em;margin:0}
+.sheet h1.ph,.s-empty{color:#9aa8b2}
+.s-head{display:flex;justify-content:space-between;gap:16pt;align-items:flex-start}
+.s-sub{font-size:11pt;color:var(--p-muted);margin-top:4pt}
+.s-contact{margin-top:6pt;font-size:9pt}
+.s-contact span+span::before{content:"·";margin:0 7pt;color:var(--p-muted)}
+.s-photo{width:27mm;height:36mm;object-fit:cover;border-radius:2pt;flex:none;display:block}
+.s-rule{height:2.2pt;background:var(--p-brand);margin-top:10pt}
+.sheet section{margin-top:13pt}
+.s-h{font:600 8.5pt var(--font-head);letter-spacing:.14em;text-transform:uppercase;color:var(--p-brand);border-bottom:.75pt solid var(--p-line);padding-bottom:3pt;margin:0 0 7pt;break-after:avoid}
+.s-h3{font:600 9.6pt var(--font-head);margin:9pt 0 4pt;break-after:avoid}
+.s-sum{margin:0}
+.s-facts,.s-two{display:grid;grid-template-columns:repeat(auto-fit,minmax(48mm,1fr));gap:8pt 14pt;margin:9pt 0 0}
+.s-facts dt,.s-two dt{font:600 7.6pt var(--font-head);letter-spacing:.08em;text-transform:uppercase;color:var(--p-muted)}
+.s-facts dd,.s-two dd{margin:1pt 0 0}
+.s-tbl{width:100%;border-collapse:collapse;table-layout:fixed;font-size:9.4pt}
+.s-tbl th{text-align:left;font:600 7.6pt var(--font-head);letter-spacing:.08em;text-transform:uppercase;color:var(--p-muted);padding:0 6pt 3pt 0;border-bottom:.5pt solid var(--p-line)}
+.s-tbl td{padding:3.2pt 6pt 3.2pt 0;border-bottom:.5pt solid var(--p-line)}
+.s-tbl td{overflow-wrap:anywhere}
+.s-tbl .g{text-align:center;white-space:nowrap;padding-right:0}
+.s-tbl td.st{color:var(--p-muted)}
+.s-tbl td.g{font-weight:700}
+.s-tbl tr{break-inside:avoid}
+.pred{font-weight:400;font-size:7.4pt;color:var(--p-muted);margin-left:5pt;font-style:italic}
+.s-note{margin:4pt 0 0;font-size:8.6pt;color:var(--p-muted)}
+.s-core{margin:5pt 0 0;font-size:9.4pt}
+.s-grp{font:600 8.8pt var(--font-head);color:var(--p-brand);margin:9pt 0 4pt;break-after:avoid}
+.item{break-inside:avoid;margin-bottom:7pt}
+.item-top{display:flex;justify-content:space-between;gap:12pt;align-items:baseline}
+.item-meta{color:var(--p-muted);font-size:8.8pt;white-space:nowrap}
+.item-sub{color:var(--p-muted);font-size:9pt}
+.item p{margin:2pt 0 0}
+
+/* responsive */
+@media (max-width:880px){
+  .shell{grid-template-columns:minmax(0,1fr);gap:14px}
+  .rail{position:sticky;top:0;z-index:5;flex-direction:row;overflow-x:auto;background:var(--bg);padding:8px 0;gap:6px;scrollbar-width:thin}
+  .rail .grp{display:none}
+  .rail a{white-space:nowrap;flex:none}
+}
+@media (prefers-reduced-motion: no-preference){ .btn,.chip{transition:border-color .15s,filter .15s} }
+
+/* print: only the sheet is printed */
+@page{size:A4;margin:14mm 15mm}
+@media print{
+  html,body{background:#fff!important;color:#000}
+  .topbar,.rail,.toast,.no-print,.view-head,.pager{display:none!important}
+  .shell{display:block;padding:0;max-width:none}
+  .view{display:none!important}
+  #view-preview{display:block!important}
+  .paper-wrap{overflow:visible;padding:0}
+  .paper{width:auto!important;min-height:0;margin:0;padding:0;box-shadow:none;zoom:1!important}
+  *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand">
+    <div class="brand-mark" aria-hidden="true">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M9 13h6M9 17h4"/></svg>
+    </div>
+    <div>
+      <h1>Student Profile Builder</h1>
+      <span class="save-state" id="save-state" role="status">Saved in this browser</span>
+    </div>
+  </div>
+  <div class="top-actions no-print">
+    <button class="btn primary" type="button" data-action="print">Print / Save as PDF</button>
+  </div>
+</header>
+
+<div class="shell">
+  <nav class="rail no-print" id="rail" aria-label="Sections"></nav>
+
+  <main class="main">
+
+    <!-- PROFILE -->
+    <section class="view" id="view-profile">
+      <div class="view-head">
+        <h2>Your profile</h2>
+        <p>The details that sit at the top of your printed profile. Everything you enter is kept in this browser until you print it or download a backup.</p>
+      </div>
+
+      <div class="notice" id="example-banner">
+        <div><strong>Want to see it filled in first?</strong><span>Load a sample student to see how your entries turn into a printed profile. You can clear it any time.</span></div>
+        <button class="btn" type="button" data-action="example">Load sample profile</button>
+      </div>
+
+      <div class="card">
+        <h3>About you</h3>
+        <div class="fgrid">
+          <div class="f s6"><label for="p-name">Full name</label><input id="p-name" data-p="name" autocomplete="name"></div>
+          <div class="f s6"><label for="p-school">School</label><input id="p-school" data-p="school" autocomplete="organization"></div>
+          <div class="f s6"><label for="p-year">Current year or programme</label><input id="p-year" data-p="year" placeholder="e.g. Year 12, A Level"></div>
+          <div class="f s6"><label for="p-grad">Expected completion</label><input id="p-grad" data-p="gradYear" placeholder="e.g. June 2028"></div>
+          <div class="f s4"><label for="p-email">Email</label><input id="p-email" data-p="email" type="email" autocomplete="email"></div>
+          <div class="f s4"><label for="p-phone">Phone</label><input id="p-phone" data-p="phone" type="tel" autocomplete="tel"></div>
+          <div class="f s4"><label for="p-loc">City and country</label><input id="p-loc" data-p="location" autocomplete="address-level2"></div>
+        </div>
+        <div class="photo">
+          <div class="photo-box" id="photo-box">No photo</div>
+          <div>
+            <div class="btn-row">
+              <button class="btn" type="button" data-action="photo-pick">Add photo</button>
+              <button class="link-btn danger" type="button" data-action="photo-remove" id="photo-remove" hidden>Remove photo</button>
+            </div>
+            <p class="hint">Optional. It is cropped to passport shape and shown at the top right of the printed profile.</p>
+          </div>
+          <input type="file" id="photo-file" accept="image/*" hidden>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>Where you are headed</h3>
+        <div class="fgrid">
+          <div class="f s6"><label for="p-course">Intended course</label><input id="p-course" data-p="course" placeholder="e.g. Computer Science"></div>
+          <div class="f s6"><label for="p-unis">Universities of interest</label><input id="p-unis" data-p="universities" placeholder="Separate with commas"></div>
+          <div class="f">
+            <label for="p-summary">Short summary</label>
+            <textarea id="p-summary" data-p="summary" maxlength="600" rows="4" placeholder="Two or three sentences on what you study, what drives you and what you want to do next."></textarea>
+            <div class="counter" id="summary-count">0 / 600</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>Skills and languages</h3>
+        <p class="hint">Type one and press Enter. For languages, add your level, for example Urdu (native).</p>
+        <div class="fgrid">
+          <div class="f s6">
+            <label for="tag-in-skills">Skills</label>
+            <div class="tagbox"><span class="tags" id="tags-skills"></span><input id="tag-in-skills" data-tag-input="skills" placeholder="e.g. Python, public speaking" maxlength="40"></div>
+          </div>
+          <div class="f s6">
+            <label for="tag-in-languages">Languages</label>
+            <div class="tagbox"><span class="tags" id="tags-languages"></span><input id="tag-in-languages" data-tag-input="languages" placeholder="e.g. English (fluent)" maxlength="40"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>Your data</h3>
+        <p class="hint">Your work is saved in this browser on this device only. Download a backup before clearing browser data or moving to another computer.</p>
+        <div class="btn-row">
+          <button class="btn" type="button" data-action="backup">Download backup</button>
+          <button class="btn" type="button" data-action="restore">Load a backup</button>
+          <button class="btn" type="button" data-action="example">Load sample profile</button>
+          <button class="btn danger" type="button" data-action="clear">Clear everything</button>
+        </div>
+        <input type="file" id="restore-file" accept="application/json,.json" hidden>
+      </div>
+    </section>
+
+    <!-- IGCSE / O LEVEL -->
+    <section class="view" id="view-igcse">
+      <div class="view-head">
+        <h2>IGCSE / O Level results</h2>
+        <p>Add each subject you have sat or expect to sit. Mark results you have not received yet as Predicted. The grade list holds both A*–G and 9–1, so pick the scale printed on your certificate.</p>
+      </div>
+      <div class="card"><h3>Quick add</h3><div class="chips" id="quick-igcse"></div></div>
+      <div id="list-igcse"></div>
+      <button class="btn add" type="button" data-add="igcse">+ Add a subject</button>
+    </section>
+
+    <!-- A LEVEL -->
+    <section class="view" id="view-alevel">
+      <div class="view-head">
+        <h2>A Level results</h2>
+        <p>Add AS and A Level subjects separately if you took both. Use Predicted for grades your school has forecast.</p>
+      </div>
+      <div class="card"><h3>Quick add</h3><div class="chips" id="quick-alevel"></div></div>
+      <div id="list-alevel"></div>
+      <button class="btn add" type="button" data-add="alevel">+ Add a subject</button>
+    </section>
+
+    <!-- IB -->
+    <section class="view" id="view-ib">
+      <div class="view-head">
+        <h2>IB Diploma results</h2>
+        <p>Enter each subject at Higher or Standard Level, with its score out of 7, then your Diploma core. The total out of 45 is worked out for you.</p>
+      </div>
+      <div class="card">
+        <h3>Diploma core</h3>
+        <p class="hint">Theory of Knowledge and the Extended Essay together award 0 to 3 core points.</p>
+        <div class="fgrid">
+          <div class="f s3"><label for="ib-tok">TOK grade</label>
+            <select id="ib-tok" data-ib="tok"><option value="">Select</option><option>A</option><option>B</option><option>C</option><option>D</option><option>E</option></select></div>
+          <div class="f s3"><label for="ib-ee">Extended Essay grade</label>
+            <select id="ib-ee" data-ib="ee"><option value="">Select</option><option>A</option><option>B</option><option>C</option><option>D</option><option>E</option></select></div>
+          <div class="f s3"><label for="ib-core">Core points (0–3)</label>
+            <input id="ib-core" data-ib="core" type="number" min="0" max="3" step="1" inputmode="numeric"></div>
+          <div class="f"><label for="ib-eetitle">Extended Essay subject and title</label>
+            <input id="ib-eetitle" data-ib="eeTitle" placeholder="e.g. Physics: how does tidal friction change the Moon's orbit?"></div>
+        </div>
+      </div>
+      <div class="card"><h3>Quick add</h3><div class="chips" id="quick-ib"></div></div>
+      <div id="list-ib"></div>
+      <button class="btn add" type="button" data-add="ib">+ Add a subject</button>
+    </section>
+
+    <!-- ACTIVITIES -->
+    <section class="view" id="view-activities">
+      <div class="view-head">
+        <h2>Extracurricular activities</h2>
+        <p>Clubs, sport, music, volunteering, work experience and projects. Admissions readers look for what you did, how long you stayed and what came of it, so be specific.</p>
+      </div>
+      <div id="list-activities"></div>
+      <button class="btn add" type="button" data-add="activities">+ Add an activity</button>
+    </section>
+
+    <!-- ACHIEVEMENTS -->
+    <section class="view" id="view-achievements">
+      <div class="view-head">
+        <h2>Achievements and awards</h2>
+        <p>Prizes, certificates, competition results, scholarships and leadership roles. Say who awarded it and at what level.</p>
+      </div>
+      <div id="list-achievements"></div>
+      <button class="btn add" type="button" data-add="achievements">+ Add an achievement</button>
+    </section>
+
+    <!-- PREVIEW -->
+    <section class="view" id="view-preview">
+      <div class="view-head no-print">
+        <div class="head-row">
+          <div>
+            <h2>Preview and print</h2>
+            <p>This is the page that will be printed. Sections with nothing entered are left out.</p>
+          </div>
+          <button class="btn primary" type="button" data-action="print">Print / Save as PDF</button>
+        </div>
+        <ol class="steps">
+          <li>Press Print / Save as PDF (or Ctrl/Cmd + P).</li>
+          <li>Set the destination to Save as PDF, or choose your printer. Paper size A4.</li>
+          <li>Switch off Headers and footers so the browser does not add a web address to the page.</li>
+        </ol>
+      </div>
+      <div class="paper-wrap" id="paper-wrap">
+        <div class="paper" id="paper"><div class="sheet" id="sheet"></div></div>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<div class="toast" id="toast" role="status" hidden></div>
+
+<noscript><p style="padding:20px">This page needs JavaScript to run.</p></noscript>
+
+<script>
+(function(){
+'use strict';
+
+var KEY = 'studentProfileBuilder.v1';
+var $ = function(s){ return document.querySelector(s); };
+var $$ = function(s){ return Array.prototype.slice.call(document.querySelectorAll(s)); };
+var uid = function(){ return Math.random().toString(36).slice(2, 9); };
+var esc = function(s){
+  return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){
+    return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
+  });
+};
+
+/* ---------- reference lists ---------- */
+var VIEWS = [
+  {id:'profile', label:'Profile'},
+  {id:'igcse', label:'IGCSE / O Level'},
+  {id:'alevel', label:'A Level'},
+  {id:'ib', label:'IB Diploma'},
+  {id:'activities', label:'Activities'},
+  {id:'achievements', label:'Achievements'},
+  {id:'preview', label:'Preview & print'}
+];
+var GROUPS = [
+  ['Profile', ['profile']],
+  ['Grades', ['igcse','alevel','ib']],
+  ['Experience', ['activities','achievements']],
+  ['Output', ['preview']]
+];
+var HASCOUNT = ['igcse','alevel','ib','activities','achievements'];
+
+var BOARDS = ['Cambridge','Edexcel','Oxford AQA','AQA','OCR','Other'];
+var STATUS = ['Achieved','Predicted'];
+var G_IGCSE = ['','9','8','7','6','5','4','3','2','1','A*','A','B','C','D','E','F','G','U'];
+var G_AL = ['','A*','A','B','C','D','E','U'];
+var SCORES = ['','7','6','5','4','3','2','1'];
+var ACT_CATS = ['Sport','Music & Performing Arts','Visual Arts & Design','Leadership','Community Service','Clubs & Societies','Academic Enrichment','Work Experience','Entrepreneurship','Research & Projects','Other'];
+var ACH_LEVELS = ['School','Regional','National','International'];
+var ACH_CATS = ['Academic','Sport','Arts & Performance','Leadership','Service','Other'];
+
+var SUBJ_IGCSE = ['Mathematics','Additional Mathematics','English Language','English Literature','English as a Second Language','Physics','Chemistry','Biology','Combined Science','Computer Science','ICT','Business Studies','Economics','Accounting','Geography','History','Sociology','Urdu','Islamiyat','Pakistan Studies','Arabic','French','Spanish','German','Art & Design','Music','Drama','Physical Education','Design & Technology','Food & Nutrition','Environmental Management','Religious Studies'];
+var SUBJ_AL = ['Mathematics','Further Mathematics','Physics','Chemistry','Biology','Computer Science','Economics','Business','Accounting','Psychology','Sociology','English Literature','English Language','History','Geography','Law','Art & Design','Media Studies','Politics','Urdu','Islamic Studies','Pakistan Studies','Environmental Management','Marine Science','Music','Physical Education','French','Spanish','German','Arabic'];
+var SUBJ_IB = ['English A: Language and Literature','English A: Literature','English B','French B','Spanish B','Arabic B','Economics','Business Management','History','Geography','Psychology','Global Politics','Environmental Systems and Societies','Digital Society','Philosophy','Biology','Chemistry','Physics','Computer Science','Design Technology','Sports, Exercise and Health Science','Mathematics: Analysis and Approaches','Mathematics: Applications and Interpretation','Visual Arts','Music','Theatre','Film'];
+
+var QUICK = {
+  igcse: ['Mathematics','English Language','English Literature','Physics','Chemistry','Biology','Computer Science','Economics','Business Studies','Geography'],
+  alevel: ['Mathematics','Further Mathematics','Physics','Chemistry','Biology','Computer Science','Economics','Business','Psychology','English Literature'],
+  ib: ['English A: Language and Literature','Mathematics: Analysis and Approaches','Physics','Chemistry','Biology','Economics','Business Management','Computer Science']
+};
+
+var SCHEMAS = {
+  igcse: {
+    noun: 'Subject',
+    empty: 'No subjects yet. Use Quick add above, or add one yourself.',
+    defaults: {subject:'', qual:'IGCSE', board:'Cambridge', session:'', grade:'', status:'Achieved'},
+    fields: [
+      {k:'subject', label:'Subject', w:'s5', list:'dl-igcse', placeholder:'e.g. Mathematics'},
+      {k:'qual', label:'Qualification', w:'s3', type:'select', options:['IGCSE','O Level']},
+      {k:'board', label:'Exam board', w:'s4', type:'select', options:BOARDS},
+      {k:'session', label:'Exam session', w:'s4', placeholder:'e.g. May/Jun 2026'},
+      {k:'grade', label:'Grade', w:'s4', type:'select', options:G_IGCSE, placeholder:'Select grade'},
+      {k:'status', label:'Status', w:'s4', type:'select', options:STATUS}
+    ]
+  },
+  alevel: {
+    noun: 'Subject',
+    empty: 'No subjects yet. Use Quick add above, or add one yourself.',
+    defaults: {subject:'', level:'A Level', board:'Cambridge', session:'', grade:'', status:'Achieved'},
+    fields: [
+      {k:'subject', label:'Subject', w:'s5', list:'dl-alevel', placeholder:'e.g. Physics'},
+      {k:'level', label:'Level', w:'s3', type:'select', options:['AS Level','A Level']},
+      {k:'board', label:'Exam board', w:'s4', type:'select', options:BOARDS},
+      {k:'session', label:'Exam session', w:'s4', placeholder:'e.g. May/Jun 2028'},
+      {k:'grade', label:'Grade', w:'s4', type:'select', options:G_AL, placeholder:'Select grade'},
+      {k:'status', label:'Status', w:'s4', type:'select', options:STATUS}
+    ]
+  },
+  ib: {
+    noun: 'Subject',
+    empty: 'No subjects yet. Use Quick add above, or add one yourself.',
+    defaults: {subject:'', level:'HL', session:'', score:'', status:'Achieved'},
+    fields: [
+      {k:'subject', label:'Subject', w:'s5', list:'dl-ib', placeholder:'e.g. Chemistry'},
+      {k:'level', label:'Level', w:'s3', type:'select', options:['HL','SL']},
+      {k:'session', label:'Exam session', w:'s4', placeholder:'e.g. May 2028'},
+      {k:'score', label:'Score (1–7)', w:'s4', type:'select', options:SCORES, placeholder:'Score'},
+      {k:'status', label:'Status', w:'s4', type:'select', options:STATUS}
+    ]
+  },
+  activities: {
+    noun: 'Activity',
+    empty: 'No activities yet. Add the first one below.',
+    defaults: {title:'', role:'', org:'', category:'Clubs & Societies', start:'', end:'', ongoing:false, hours:'', desc:''},
+    fields: [
+      {k:'title', label:'Activity', w:'s6', placeholder:'e.g. Debating Society'},
+      {k:'role', label:'Your role', w:'s6', placeholder:'e.g. Captain'},
+      {k:'org', label:'Organisation', w:'s6', placeholder:'School, club or charity'},
+      {k:'category', label:'Category', w:'s6', type:'select', options:ACT_CATS},
+      {k:'start', label:'Started', w:'s3', type:'month', placeholder:'YYYY-MM'},
+      {k:'end', label:'Ended', w:'s3', type:'month', placeholder:'YYYY-MM'},
+      {k:'hours', label:'Hours per week', w:'s3', type:'number', min:0, max:80, step:'0.5'},
+      {k:'ongoing', label:'Still doing this', w:'s3', type:'check'},
+      {k:'desc', label:'What you did and what came of it', w:'', type:'textarea', max:400, placeholder:'e.g. Trained 20 junior members each week and organised the inter-school tournament.'}
+    ]
+  },
+  achievements: {
+    noun: 'Achievement',
+    empty: 'No achievements yet. Add the first one below.',
+    defaults: {title:'', body:'', date:'', level:'School', category:'Academic', desc:''},
+    fields: [
+      {k:'title', label:'Award or achievement', w:'s6', placeholder:'e.g. Silver Medal, Regional Maths Olympiad'},
+      {k:'body', label:'Awarded by', w:'s6', placeholder:'e.g. Regional Mathematical Society'},
+      {k:'date', label:'Date', w:'s4', type:'month', placeholder:'YYYY-MM'},
+      {k:'level', label:'Level', w:'s4', type:'select', options:ACH_LEVELS},
+      {k:'category', label:'Category', w:'s4', type:'select', options:ACH_CATS},
+      {k:'desc', label:'Details (optional)', w:'', type:'textarea', max:300, placeholder:'What it was for and how many people took part.'}
+    ]
+  }
+};
+
+/* ---------- state ---------- */
+function blank(){
+  return {
+    profile:{name:'',school:'',year:'',gradYear:'',email:'',phone:'',location:'',course:'',universities:'',summary:'',photo:''},
+    igcse:[], alevel:[],
+    ib:{rows:[], tok:'', ee:'', eeTitle:'', core:''},
+    activities:[], achievements:[], skills:[], languages:[]
+  };
+}
+function cleanRows(arr, key){
+  var defs = SCHEMAS[key].defaults, out = [];
+  (Array.isArray(arr) ? arr : []).forEach(function(r){
+    if(!r || typeof r !== 'object') return;
+    var row = {id: uid()};
+    Object.keys(defs).forEach(function(k){
+      var v = r[k];
+      if(typeof defs[k] === 'boolean') row[k] = !!v;
+      else row[k] = (typeof v === 'string' || typeof v === 'number') ? String(v) : defs[k];
+    });
+    out.push(row);
+  });
+  return out;
+}
+function normalise(d){
+  var b = blank();
+  if(!d || typeof d !== 'object') return b;
+  if(d.profile && typeof d.profile === 'object'){
+    Object.keys(b.profile).forEach(function(k){
+      if(typeof d.profile[k] === 'string') b.profile[k] = d.profile[k];
+    });
+    if(b.profile.photo && b.profile.photo.indexOf('data:image/') !== 0) b.profile.photo = '';
+  }
+  b.igcse = cleanRows(d.igcse, 'igcse');
+  b.alevel = cleanRows(d.alevel, 'alevel');
+  b.activities = cleanRows(d.activities, 'activities');
+  b.achievements = cleanRows(d.achievements, 'achievements');
+  if(d.ib && typeof d.ib === 'object'){
+    b.ib.rows = cleanRows(d.ib.rows, 'ib');
+    ['tok','ee','eeTitle','core'].forEach(function(k){
+      if(typeof d.ib[k] === 'string' || typeof d.ib[k] === 'number') b.ib[k] = String(d.ib[k]);
+    });
+  }
+  ['skills','languages'].forEach(function(k){
+    if(Array.isArray(d[k])) b[k] = d[k].map(String).map(function(s){ return s.slice(0,40); }).slice(0,20);
+  });
+  return b;
+}
+function load(){
+  try{
+    var raw = localStorage.getItem(KEY);
+    if(raw) return normalise(JSON.parse(raw));
+  }catch(e){}
+  return blank();
+}
+var state = load();
+function getArr(key){ return key === 'ib' ? state.ib.rows : state[key]; }
+function hasData(){
+  var s = state;
+  return !!(Object.keys(s.profile).some(function(k){ return s.profile[k]; }) ||
+    s.igcse.length || s.alevel.length || s.ib.rows.length || s.ib.tok || s.ib.ee || s.ib.eeTitle || s.ib.core ||
+    s.activities.length || s.achievements.length || s.skills.length || s.languages.length);
+}
+
+/* ---------- saving and messages ---------- */
+var saveTimer;
+function setStatus(text, warn){
+  var el = $('#save-state');
+  el.textContent = text;
+  el.classList.toggle('warn', !!warn);
+}
+function save(){
+  clearTimeout(saveTimer);
+  setStatus('Saving…');
+  saveTimer = setTimeout(function(){
+    try{
+      localStorage.setItem(KEY, JSON.stringify(state));
+      setStatus('Saved in this browser');
+    }catch(e){
+      setStatus('Could not save in this browser. Download a backup to keep your work.', true);
+    }
+  }, 300);
+}
+var toastTimer;
+function toast(msg){
+  var t = $('#toast');
+  t.textContent = msg;
+  t.hidden = false;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(function(){ t.hidden = true; }, 4000);
+}
+function commit(){ save(); updateAll(); }
+
+/* ---------- rows ---------- */
+function fieldHtml(key, row, f){
+  var val = row[f.k] == null ? '' : row[f.k];
+  var id = key + '-' + row.id + '-' + f.k;
+  var cls = 'f' + (f.w ? ' ' + f.w : '');
+  if(f.type === 'check'){
+    return '<div class="' + cls + ' check"><label for="' + id + '"><input type="checkbox" id="' + id + '" data-k="' + f.k + '"' + (val ? ' checked' : '') + '> ' + esc(f.label) + '</label></div>';
+  }
+  var ctl;
+  if(f.type === 'select'){
+    ctl = '<select id="' + id + '" data-k="' + f.k + '">' + f.options.map(function(o){
+      return '<option value="' + esc(o) + '"' + (o === String(val) ? ' selected' : '') + '>' + esc(o === '' ? (f.placeholder || 'Select') : o) + '</option>';
+    }).join('') + '</select>';
+  } else if(f.type === 'textarea'){
+    ctl = '<textarea id="' + id + '" data-k="' + f.k + '" rows="3" maxlength="' + (f.max || 500) + '" placeholder="' + esc(f.placeholder || '') + '">' + esc(val) + '</textarea>';
+  } else {
+    var extra = '';
+    if(f.list) extra += ' list="' + f.list + '"';
+    if(f.min != null) extra += ' min="' + f.min + '"';
+    if(f.max != null) extra += ' max="' + f.max + '"';
+    if(f.step) extra += ' step="' + f.step + '" inputmode="decimal"';
+    if(f.k === 'end' && row.ongoing) extra += ' disabled';
+    ctl = '<input id="' + id + '" data-k="' + f.k + '" type="' + (f.type || 'text') + '" value="' + esc(val) + '" placeholder="' + esc(f.placeholder || '') + '" autocomplete="off"' + extra + '>';
+  }
+  return '<div class="' + cls + '"><label for="' + id + '">' + esc(f.label) + '</label>' + ctl + '</div>';
+}
+function rowHtml(key, row, i){
+  var sc = SCHEMAS[key];
+  return '<article class="row" data-id="' + row.id + '" data-key="' + key + '">' +
+    '<div class="row-head"><span class="row-n">' + sc.noun + ' ' + (i + 1) + '</span>' +
+    '<button type="button" class="link-btn danger" data-remove aria-label="Remove ' + sc.noun.toLowerCase() + ' ' + (i + 1) + '">Remove</button></div>' +
+    '<div class="fgrid">' + sc.fields.map(function(f){ return fieldHtml(key, row, f); }).join('') + '</div></article>';
+}
+function renderList(key){
+  var host = $('#list-' + key), arr = getArr(key);
+  host.innerHTML = arr.length ? arr.map(function(r, i){ return rowHtml(key, r, i); }).join('') : '<p class="empty">' + esc(SCHEMAS[key].empty) + '</p>';
+}
+function addRow(key, over){
+  var row = Object.assign({id: uid()}, SCHEMAS[key].defaults, over || {});
+  getArr(key).push(row);
+  renderList(key);
+  commit();
+  var last = $('#list-' + key + ' .row:last-child');
+  if(last){
+    var target = (over && over.subject) ? (last.querySelector('[data-k="grade"],[data-k="score"]') || last.querySelector('input,select,textarea')) : last.querySelector('input,select,textarea');
+    if(target) target.focus();
+  }
+}
+function removeRow(key, id){
+  var arr = getArr(key), i = arr.findIndex(function(r){ return r.id === id; });
+  if(i > -1) arr.splice(i, 1);
+  renderList(key);
+  commit();
+  var add = $('[data-add="' + key + '"]');
+  if(add) add.focus();
+}
+
+/* ---------- tags ---------- */
+function renderTags(key){
+  $('#tags-' + key).innerHTML = state[key].map(function(t, i){
+    return '<span class="tag">' + esc(t) + '<button type="button" data-tag-key="' + key + '" data-tag-i="' + i + '" aria-label="Remove ' + esc(t) + '">×</button></span>';
+  }).join('');
+}
+function addTag(key, el){
+  var v = el.value.trim().replace(/,+$/, '').trim();
+  if(v && v.length <= 40 && state[key].length < 20 && state[key].indexOf(v) === -1){
+    state[key].push(v);
+    renderTags(key);
+    commit();
+  }
+  el.value = '';
+}
+
+/* ---------- photo ---------- */
+function renderPhoto(){
+  var p = state.profile.photo;
+  var ok = p && p.indexOf('data:image/') === 0;
+  $('#photo-box').innerHTML = ok ? '<img alt="Your photo" src="' + p + '">' : 'No photo';
+  $('#photo-remove').hidden = !ok;
+}
+$('#photo-file').addEventListener('change', function(e){
+  var f = e.target.files[0];
+  e.target.value = '';
+  if(!f) return;
+  var url = URL.createObjectURL(f), img = new Image();
+  img.onload = function(){
+    var W = 330, H = 440, c = document.createElement('canvas');
+    c.width = W; c.height = H;
+    var x = c.getContext('2d');
+    var s = Math.max(W / img.width, H / img.height), w = img.width * s, h = img.height * s;
+    x.fillStyle = '#fff'; x.fillRect(0, 0, W, H);
+    x.drawImage(img, (W - w) / 2, (H - h) / 2, w, h);
+    state.profile.photo = c.toDataURL('image/jpeg', 0.85);
+    URL.revokeObjectURL(url);
+    renderPhoto();
+    commit();
+  };
+  img.onerror = function(){ URL.revokeObjectURL(url); toast('That file could not be read as an image.'); };
+  img.src = url;
+});
+
+/* ---------- editing events ---------- */
+function onEdit(e){
+  var el = e.target;
+  if(!el || !el.dataset) return;
+  if(el.dataset.p !== undefined){
+    state.profile[el.dataset.p] = el.value;
+    if(el.dataset.p === 'summary') $('#summary-count').textContent = el.value.length + ' / 600';
+    commit();
+    return;
+  }
+  if(el.dataset.ib !== undefined){
+    state.ib[el.dataset.ib] = el.value;
+    commit();
+    return;
+  }
+  var row = el.closest ? el.closest('.row') : null;
+  if(row && el.dataset.k){
+    var r = getArr(row.dataset.key).find(function(x){ return x.id === row.dataset.id; });
+    if(!r) return;
+    r[el.dataset.k] = el.type === 'checkbox' ? el.checked : el.value;
+    if(el.dataset.k === 'ongoing'){
+      var end = row.querySelector('[data-k="end"]');
+      end.disabled = el.checked;
+      if(el.checked){ r.end = ''; end.value = ''; }
+    }
+    commit();
+  }
+}
+document.addEventListener('input', onEdit);
+document.addEventListener('change', onEdit);
+
+document.addEventListener('keydown', function(e){
+  var el = e.target, key = el && el.dataset && el.dataset.tagInput;
+  if(!key) return;
+  if(e.key === 'Enter' || e.key === ','){
+    e.preventDefault();
+    addTag(key, el);
+  } else if(e.key === 'Backspace' && !el.value && state[key].length){
+    state[key].pop();
+    renderTags(key);
+    commit();
+  }
+});
+document.addEventListener('focusout', function(e){
+  var el = e.target, key = el && el.dataset && el.dataset.tagInput;
+  if(key && el.value.trim()) addTag(key, el);
+});
+
+function twoStep(btn, fn){
+  if(btn.dataset.armed){
+    clearTimeout(btn._t);
+    delete btn.dataset.armed;
+    btn.textContent = btn.dataset.label;
+    fn();
+    return;
+  }
+  btn.dataset.label = btn.textContent;
+  btn.dataset.armed = '1';
+  btn.textContent = 'Click again to confirm';
+  btn._t = setTimeout(function(){
+    delete btn.dataset.armed;
+    btn.textContent = btn.dataset.label;
+  }, 3500);
+}
+
+var ACTIONS = {
+  print: function(){ window.print(); },
+  'photo-pick': function(){ $('#photo-file').click(); },
+  'photo-remove': function(){ state.profile.photo = ''; renderPhoto(); commit(); },
+  backup: function(){
+    var blob = new Blob([JSON.stringify(state, null, 2)], {type:'application/json'});
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'student-profile-backup.json';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(function(){ URL.revokeObjectURL(a.href); }, 1500);
+  },
+  restore: function(){ $('#restore-file').click(); },
+  example: function(btn){
+    var go = function(){ state = exampleData(); hydrate(); commit(); toast('Sample profile loaded.'); };
+    if(hasData()) twoStep(btn, go); else go();
+  },
+  clear: function(btn){
+    twoStep(btn, function(){ state = blank(); hydrate(); commit(); toast('Everything cleared.'); });
+  }
+};
+
+document.addEventListener('click', function(e){
+  var t = e.target.closest ? e.target.closest('button') : null;
+  if(!t) return;
+  if(t.dataset.add){ addRow(t.dataset.add); }
+  else if(t.dataset.quick){ addRow(t.dataset.quick, {subject: t.dataset.subject}); }
+  else if(t.hasAttribute('data-remove')){
+    var row = t.closest('.row');
+    if(row) removeRow(row.dataset.key, row.dataset.id);
+  }
+  else if(t.dataset.tagKey){
+    state[t.dataset.tagKey].splice(parseInt(t.dataset.tagI, 10), 1);
+    renderTags(t.dataset.tagKey);
+    commit();
+  }
+  else if(t.dataset.action && ACTIONS[t.dataset.action]){ ACTIONS[t.dataset.action](t); }
+});
+
+$('#restore-file').addEventListener('change', function(e){
+  var f = e.target.files[0];
+  e.target.value = '';
+  if(!f) return;
+  var rd = new FileReader();
+  rd.onload = function(){
+    try{
+      state = normalise(JSON.parse(rd.result));
+      hydrate();
+      commit();
+      toast('Backup loaded.');
+    }catch(err){ toast('That file is not a valid backup.'); }
+  };
+  rd.readAsText(f);
+});
+
+/* ---------- sheet ---------- */
+var MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+function fmtMonth(v){
+  var m = /^(\d{4})-(\d{2})$/.exec(v || '');
+  if(m && +m[2] >= 1 && +m[2] <= 12) return MONTHS[+m[2] - 1] + ' ' + m[1];
+  return (v || '').trim();
+}
+function nl(s){ return esc(s).replace(/\n/g, '<br>'); }
+function sec(title, inner){ return '<section><h2 class="s-h">' + title + '</h2>' + inner + '</section>'; }
+var COL_W = ['27%','16%','14%','17%','13%','13%'];
+function gTable(rows, cols){
+  return '<table class="s-tbl"><colgroup>' + COL_W.map(function(w){ return '<col style="width:' + w + '">'; }).join('') + '</colgroup><thead><tr>' + cols.map(function(c){ return '<th class="' + (c.cls || '') + '">' + c.h + '</th>'; }).join('') +
+    '</tr></thead><tbody>' + rows.map(function(r){
+      return '<tr>' + cols.map(function(c){ return '<td class="' + (c.cls || '') + '">' + c.fn(r) + '</td>'; }).join('') + '</tr>';
+    }).join('') + '</tbody></table>';
+}
+function gradeCell(r){ return r.grade ? esc(r.grade) : '–'; }
+function statusCell(r){ return esc(r.status || 'Achieved'); }
+function topNote(rows, top, suffix){
+  var g = rows.filter(function(r){ return r.grade; });
+  if(!g.length) return '';
+  var n = g.filter(function(r){ return top.indexOf(r.grade) > -1; }).length;
+  return '<p class="s-note">' + n + ' of ' + g.length + ' graded subjects at ' + suffix + '.</p>';
+}
+function gradeBlock(rows, title, levelHead, levelFn, top, suffix){
+  if(!rows.length) return '';
+  return '<h3 class="s-h3">' + title + '</h3>' + gTable(rows, [
+    {h:'Subject', fn:function(r){ return esc(r.subject); }},
+    {h:levelHead, fn:levelFn},
+    {h:'Board', fn:function(r){ return esc(r.board); }},
+    {h:'Session', fn:function(r){ return esc(r.session) || '–'; }},
+    {h:'Status', cls:'st', fn:statusCell},
+    {h:'Grade', cls:'g', fn:gradeCell}
+  ]) + topNote(rows, top, suffix);
+}
+function dateRange(a){
+  var s = fmtMonth(a.start), e = fmtMonth(a.end);
+  if(a.ongoing) return s ? s + ' – Present' : 'Ongoing';
+  if(s && e) return s + ' – ' + e;
+  return s || e || '';
+}
+function catOf(a){ return ACT_CATS.indexOf(a.category) > -1 ? a.category : 'Other'; }
+
+function renderSheet(){
+  var p = state.profile, html = '';
+  var name = p.name.trim();
+  var sub = [p.school, p.year].map(function(s){ return s.trim(); }).filter(Boolean).join(' · ');
+  var contact = [p.email, p.phone, p.location].map(function(s){ return s.trim(); }).filter(Boolean);
+  var photo = (p.photo && p.photo.indexOf('data:image/') === 0) ? '<img class="s-photo" src="' + p.photo + '" alt="">' : '';
+
+  var ig = state.igcse.filter(function(r){ return r.subject.trim(); });
+  var al = state.alevel.filter(function(r){ return r.subject.trim(); });
+  var ibr = state.ib.rows.filter(function(r){ return r.subject.trim(); });
+  var ibCore = state.ib.tok || state.ib.ee || state.ib.eeTitle.trim() || state.ib.core !== '';
+  var acts = state.activities.filter(function(a){ return a.title.trim() || a.org.trim(); });
+  var achs = state.achievements.filter(function(a){ return a.title.trim(); });
+
+  var anything = name || sub || contact.length || photo || p.summary.trim() || p.course.trim() || p.universities.trim() || p.gradYear.trim() ||
+    ig.length || al.length || ibr.length || ibCore || acts.length || achs.length || state.skills.length || state.languages.length;
+
+  if(!anything){
+    $('#sheet').innerHTML = '<p class="s-empty">Your profile appears here as you fill it in. Start with the Profile section.</p>';
+    return;
+  }
+
+  html += '<header class="s-head"><div>' +
+    '<h1' + (name ? '' : ' class="ph"') + '>' + (name ? esc(name) : 'Your name') + '</h1>' +
+    (sub ? '<div class="s-sub">' + esc(sub) + '</div>' : '') +
+    (contact.length ? '<div class="s-contact">' + contact.map(function(c){ return '<span>' + esc(c) + '</span>'; }).join('') + '</div>' : '') +
+    '</div>' + photo + '</header><div class="s-rule"></div>';
+
+  /* profile */
+  var facts = [['Intended course', p.course], ['Universities of interest', p.universities], ['Expected completion', p.gradYear]].filter(function(f){ return f[1] && f[1].trim(); });
+  if(p.summary.trim() || facts.length){
+    html += sec('Profile',
+      (p.summary.trim() ? '<p class="s-sum">' + nl(p.summary.trim()) + '</p>' : '') +
+      (facts.length ? '<dl class="s-facts">' + facts.map(function(f){ return '<div><dt>' + f[0] + '</dt><dd>' + esc(f[1].trim()) + '</dd></div>'; }).join('') + '</dl>' : ''));
+  }
+
+  /* academic record */
+  var acad = '';
+  acad += gradeBlock(ig, 'IGCSE / O Level', 'Qualification', function(r){ return esc(r.qual); }, ['A*','A','9','8','7'], 'A*/A (9–7)');
+  acad += gradeBlock(al, 'A Level', 'Level', function(r){ return esc(r.level); }, ['A*','A'], 'A*/A');
+  if(ibr.length || ibCore){
+    var rows = ibr, sum = 0, anyScore = false, anyPred = false;
+    rows.forEach(function(r){
+      var n = parseInt(r.score, 10);
+      if(n >= 1 && n <= 7){ sum += n; anyScore = true; }
+      if(r.status === 'Predicted' && r.score) anyPred = true;
+    });
+    var core = parseInt(state.ib.core, 10);
+    var coreOk = core >= 0 && core <= 3;
+    if(coreOk) sum += core;
+    acad += '<h3 class="s-h3">IB Diploma</h3>';
+    if(rows.length){
+      acad += gTable(rows, [
+        {h:'Subject', fn:function(r){ return esc(r.subject); }},
+        {h:'Level', fn:function(r){ return esc(r.level); }},
+        {h:'Board', fn:function(){ return 'IB'; }},
+        {h:'Session', fn:function(r){ return esc(r.session) || '–'; }},
+        {h:'Status', cls:'st', fn:statusCell},
+        {h:'Score', cls:'g', fn:function(r){ return r.score ? esc(r.score) : '–'; }}
+      ]);
+    }
+    var coreBits = [];
+    if(state.ib.tok) coreBits.push('Theory of Knowledge: <b>' + esc(state.ib.tok) + '</b>');
+    if(state.ib.ee) coreBits.push('Extended Essay: <b>' + esc(state.ib.ee) + '</b>');
+    if(coreOk) coreBits.push('Core points: <b>' + core + '</b>');
+    if(coreBits.length) acad += '<p class="s-core">' + coreBits.join(' &nbsp;·&nbsp; ') + '</p>';
+    if(state.ib.eeTitle.trim()) acad += '<p class="s-note">Extended Essay: ' + esc(state.ib.eeTitle.trim()) + '</p>';
+    if(anyScore) acad += '<p class="s-core"><b>Total: ' + sum + ' / 45</b>' + (anyPred ? ' <span class="pred">includes predicted scores</span>' : '') + '</p>';
+  }
+  if(acad) html += sec('Academic record', acad);
+
+  /* activities */
+  if(acts.length){
+    var groups = ACT_CATS.map(function(c){
+      return [c, acts.filter(function(a){ return catOf(a) === c; })];
+    }).filter(function(g){ return g[1].length; });
+    html += sec('Extracurricular activities', groups.map(function(g){
+      return '<div class="s-grp">' + esc(g[0]) + '</div>' + g[1].map(function(a){
+        var title = a.title.trim() || a.org.trim();
+        var hrs = parseFloat(a.hours);
+        var meta = [dateRange(a), hrs > 0 ? hrs + ' hrs/week' : ''].filter(Boolean).join(' · ');
+        var subline = [a.role.trim(), a.title.trim() ? a.org.trim() : ''].filter(Boolean).join(' · ');
+        return '<div class="item"><div class="item-top"><b>' + esc(title) + '</b><span class="item-meta">' + esc(meta) + '</span></div>' +
+          (subline ? '<div class="item-sub">' + esc(subline) + '</div>' : '') +
+          (a.desc.trim() ? '<p>' + nl(a.desc.trim()) + '</p>' : '') + '</div>';
+      }).join('');
+    }).join(''));
+  }
+
+  /* achievements */
+  if(achs.length){
+    var sorted = achs.slice().sort(function(a, b){ return (b.date || '').localeCompare(a.date || ''); });
+    html += sec('Achievements and awards', sorted.map(function(a){
+      var line = [a.body.trim(), a.level ? a.level + ' level' : '', a.category].filter(Boolean).join(' · ');
+      return '<div class="item"><div class="item-top"><b>' + esc(a.title.trim()) + '</b><span class="item-meta">' + esc(fmtMonth(a.date)) + '</span></div>' +
+        (line ? '<div class="item-sub">' + esc(line) + '</div>' : '') +
+        (a.desc.trim() ? '<p>' + nl(a.desc.trim()) + '</p>' : '') + '</div>';
+    }).join(''));
+  }
+
+  /* skills */
+  if(state.skills.length || state.languages.length){
+    var parts = [];
+    if(state.skills.length) parts.push('<div><dt>Skills</dt><dd>' + state.skills.map(esc).join(', ') + '</dd></div>');
+    if(state.languages.length) parts.push('<div><dt>Languages</dt><dd>' + state.languages.map(esc).join(', ') + '</dd></div>');
+    html += sec('Skills and languages', '<dl class="s-two" style="margin-top:0">' + parts.join('') + '</dl>');
+  }
+
+  $('#sheet').innerHTML = html;
+}
+
+function fitPaper(){
+  var wrap = $('#paper-wrap'), paper = $('#paper');
+  if(!wrap || !paper) return;
+  paper.style.zoom = 1;
+  var avail = wrap.clientWidth, need = paper.offsetWidth;
+  if(avail > 0 && need > avail) paper.style.zoom = avail / need;
+}
+
+/* ---------- counts, nav, hydrate ---------- */
+function updateCounts(){
+  var c = {
+    igcse: state.igcse.filter(function(r){ return r.subject.trim(); }).length,
+    alevel: state.alevel.filter(function(r){ return r.subject.trim(); }).length,
+    ib: state.ib.rows.filter(function(r){ return r.subject.trim(); }).length,
+    activities: state.activities.filter(function(r){ return r.title.trim() || r.org.trim(); }).length,
+    achievements: state.achievements.filter(function(r){ return r.title.trim(); }).length
+  };
+  Object.keys(c).forEach(function(k){
+    var el = $('#count-' + k);
+    if(el){ el.textContent = c[k]; el.hidden = !c[k]; }
+  });
+}
+function updateAll(){
+  renderSheet();
+  updateCounts();
+  $('#example-banner').hidden = hasData();
+}
+function buildNav(){
+  var label = function(id){ return VIEWS.filter(function(v){ return v.id === id; })[0].label; };
+  $('#rail').innerHTML = GROUPS.map(function(g){
+    return '<div class="grp">' + g[0] + '</div>' + g[1].map(function(id){
+      return '<a href="#' + id + '" data-view="' + id + '"><span>' + esc(label(id)) + '</span>' +
+        (HASCOUNT.indexOf(id) > -1 ? '<span class="count" id="count-' + id + '" hidden></span>' : '') + '</a>';
+    }).join('');
+  }).join('');
+}
+function buildPagers(){
+  VIEWS.forEach(function(v, i){
+    var prev = VIEWS[i - 1], next = VIEWS[i + 1];
+    $('#view-' + v.id).insertAdjacentHTML('beforeend', '<div class="pager no-print">' +
+      (prev ? '<a class="btn" href="#' + prev.id + '">← ' + esc(prev.label) + '</a>' : '<span></span>') +
+      (next ? '<a class="btn primary" href="#' + next.id + '">' + (next.id === 'preview' ? 'Preview your profile' : 'Next: ' + esc(next.label)) + ' →</a>' : '') + '</div>');
+  });
+}
+function buildStatic(){
+  var dl = function(id, arr){
+    return '<datalist id="' + id + '">' + arr.map(function(s){ return '<option value="' + esc(s) + '"></option>'; }).join('') + '</datalist>';
+  };
+  document.body.insertAdjacentHTML('beforeend', dl('dl-igcse', SUBJ_IGCSE) + dl('dl-alevel', SUBJ_AL) + dl('dl-ib', SUBJ_IB));
+  Object.keys(QUICK).forEach(function(key){
+    $('#quick-' + key).innerHTML = QUICK[key].map(function(s){
+      return '<button type="button" class="chip" data-quick="' + key + '" data-subject="' + esc(s) + '">+ ' + esc(s) + '</button>';
+    }).join('');
+  });
+}
+function hydrate(){
+  $$('[data-p]').forEach(function(el){ el.value = state.profile[el.dataset.p] || ''; });
+  $$('[data-ib]').forEach(function(el){ el.value = state.ib[el.dataset.ib] || ''; });
+  $('#summary-count').textContent = state.profile.summary.length + ' / 600';
+  ['igcse','alevel','ib','activities','achievements'].forEach(renderList);
+  renderTags('skills');
+  renderTags('languages');
+  renderPhoto();
+}
+
+function show(id){
+  if(!VIEWS.some(function(v){ return v.id === id; })) id = 'profile';
+  $$('.view').forEach(function(v){ v.classList.toggle('active', v.id === 'view-' + id); });
+  $$('.rail a').forEach(function(a){
+    if(a.dataset.view === id) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current');
+  });
+  if(id === 'preview'){ renderSheet(); fitPaper(); }
+  var cur = $('.rail a[aria-current]');
+  if(cur && cur.scrollIntoView) cur.scrollIntoView({block:'nearest', inline:'center'});
+}
+window.addEventListener('hashchange', function(){ show(location.hash.slice(1)); window.scrollTo(0, 0); });
+window.addEventListener('resize', fitPaper);
+
+/* PDF file name comes from the page title, so name it after the student while printing */
+var oldTitle = document.title;
+window.addEventListener('beforeprint', function(){
+  oldTitle = document.title;
+  renderSheet();
+  document.title = ((state.profile.name.trim() || 'Student') + ' - Student Profile');
+});
+window.addEventListener('afterprint', function(){ document.title = oldTitle; });
+
+/* ---------- sample data ---------- */
+function exampleData(){
+  var d = blank(), R = function(o){ return Object.assign({id: uid()}, o); };
+  d.profile = {
+    name:'Sample Student', school:'Example International School', year:'Year 12, A Level', gradYear:'June 2028',
+    email:'sample.student@example.com', phone:'+00 000 000 0000', location:'City, Country',
+    course:'Computer Science', universities:'University A, University B, University C',
+    summary:'Year 12 student with a strong record in mathematics and the sciences. Interested in computer science and robotics, captain of the school debating society and a regular volunteer tutor for younger students. This is sample text: replace it with your own.',
+    photo:''
+  };
+  [['Mathematics','9'],['English Language','8'],['Physics','9'],['Chemistry','8'],['Biology','8'],['Computer Science','9'],['Economics','7'],['Urdu','8']].forEach(function(x){
+    d.igcse.push(R({subject:x[0], qual:'IGCSE', board:'Cambridge', session:'May/Jun 2026', grade:x[1], status:'Achieved'}));
+  });
+  [['Mathematics','A*'],['Physics','A'],['Chemistry','A'],['Computer Science','A*']].forEach(function(x){
+    d.alevel.push(R({subject:x[0], level:'A Level', board:'Cambridge', session:'May/Jun 2028', grade:x[1], status:'Predicted'}));
+  });
+  d.activities = [
+    R({title:'Debating Society', role:'Captain', org:'Example International School', category:'Clubs & Societies', start:'2024-09', end:'', ongoing:true, hours:'3', desc:'Lead weekly training for 20 members and organised the inter-school tournament with 8 teams.'}),
+    R({title:'Robotics Team', role:'Programmer', org:'Example International School', category:'Research & Projects', start:'2025-01', end:'', ongoing:true, hours:'4', desc:'Wrote the navigation code for a line-following robot that placed second at the regional competition.'}),
+    R({title:'Peer Tutoring', role:'Volunteer tutor', org:'Community Learning Centre', category:'Community Service', start:'2025-03', end:'', ongoing:true, hours:'2', desc:'Tutor four Year 8 students in mathematics every week.'}),
+    R({title:'School Football Team', role:'Midfielder', org:'Example International School', category:'Sport', start:'2023-09', end:'2025-06', ongoing:false, hours:'5', desc:''})
+  ];
+  d.achievements = [
+    R({title:'Silver Medal, Regional Mathematics Olympiad', body:'Regional Mathematical Society', date:'2026-03', level:'Regional', category:'Academic', desc:'Top 5% of 1,200 entrants.'}),
+    R({title:'Best Delegate, Model United Nations', body:'Example MUN Conference', date:'2025-11', level:'National', category:'Leadership', desc:''}),
+    R({title:'Academic Excellence Award', body:'Example International School', date:'2025-07', level:'School', category:'Academic', desc:''})
+  ];
+  d.skills = ['Python','Public speaking','Team leadership','Data analysis'];
+  d.languages = ['English (fluent)','Urdu (native)','French (beginner)'];
+  return d;
+}
+
+/* ---------- start ---------- */
+buildNav();
+buildPagers();
+buildStatic();
+hydrate();
+updateAll();
+show(location.hash.slice(1));
+})();
+</script>
+</body>
+</html>
