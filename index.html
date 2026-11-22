@@ -51,7 +51,7 @@ a{color:inherit}
 
 /* views */
 .view{display:none}
-.view.active{display:block}
+.view.active{display:block;animation:viewIn .28s ease both}
 .view-head{margin:0 0 18px}
 .view-head h2{font-size:27px}
 .view-head p{margin:7px 0 0;color:var(--ink-2);max-width:64ch}
@@ -122,7 +122,7 @@ input:focus-visible,select:focus-visible,textarea:focus-visible,button:focus-vis
 .paper-wrap{overflow-x:auto;padding-bottom:8px}
 .paper{width:210mm;margin:0 auto;background:#fff;color:#1b2630;padding:15mm;min-height:297mm;box-shadow:0 1px 2px rgba(0,0,0,.1),0 14px 34px rgba(0,0,0,.14)}
 
-.sheet{--p-ink:#1b2630;--p-muted:#5d6d79;--p-line:#cfd8de;--p-brand:#0d5c6e;color:var(--p-ink);font:9.6pt/1.45 var(--font-ui)}
+.sheet{--p-ink:#1b2630;--p-muted:#5d6d79;--p-line:#cfd8de;--p-brand:#0d5c6e;background:#fff;color:var(--p-ink);font:9.6pt/1.45 var(--font-ui)}
 .sheet h1{font:700 25pt/1.1 var(--font-doc);letter-spacing:-.01em;margin:0}
 .sheet h1.ph,.s-empty{color:#9aa8b2}
 .s-head{display:flex;justify-content:space-between;gap:16pt;align-items:flex-start}
@@ -156,6 +156,82 @@ input:focus-visible,select:focus-visible,textarea:focus-visible,button:focus-vis
 .item-sub{color:var(--p-muted);font-size:9pt}
 .item p{margin:2pt 0 0}
 
+/* motion */
+.btn svg{flex:none}
+.btn:active,.chip:active{transform:scale(.97)}
+@keyframes viewIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@keyframes rowIn{from{opacity:0;transform:translateY(-8px) scale(.985)}to{opacity:1;transform:none}}
+@keyframes bump{0%{transform:scale(1)}40%{transform:scale(1.4)}100%{transform:scale(1)}}
+@keyframes tagIn{from{opacity:0;transform:scale(.7)}to{opacity:1;transform:none}}
+@keyframes toastIn{from{opacity:0;transform:translate(-50%,10px)}to{opacity:1;transform:translate(-50%,0)}}
+@keyframes paperIn{from{opacity:0;transform:translateY(14px) scale(.985)}to{opacity:1;transform:none}}
+.row.enter{animation:rowIn .32s cubic-bezier(.2,.9,.3,1.1)}
+.row.leaving{opacity:0;transform:translateX(18px);transition:opacity .18s ease,transform .18s ease}
+.count.bump{animation:bump .35s ease}
+.tag.pop{animation:tagIn .25s cubic-bezier(.2,.9,.3,1.3)}
+.toast{animation:toastIn .25s ease}
+#view-preview.active .paper{animation:paperIn .45s ease both}
+
+/* print and PDF progress screen */
+.busy{position:fixed;inset:0;z-index:3000;display:grid;place-items:center;padding:20px;background:var(--bg);opacity:0;transition:opacity .2s ease}
+.busy.show{opacity:1}
+.busy-card{width:min(380px,100%);background:var(--surface);border:1px solid var(--line);border-radius:20px;padding:26px 24px 22px;text-align:center;box-shadow:0 20px 50px rgba(0,0,0,.14);transform:translateY(14px) scale(.97);transition:transform .32s cubic-bezier(.2,.9,.3,1.2)}
+.busy.show .busy-card{transform:none}
+.busy-card h2{font-size:20px;margin-top:6px}
+.busy-card p{margin:6px 0 0;color:var(--ink-2);font-size:14px;min-height:21px}
+body.is-busy{overflow:hidden}
+.stage{position:relative;width:132px;height:132px;margin:0 auto 6px}
+.scene{position:absolute;inset:0;display:none}
+.busy[data-state="working"][data-mode="pdf"] .scene-pdf,
+.busy[data-state="working"][data-mode="print"] .scene-print{display:block}
+.busy[data-state="done"] .scene-done,
+.busy[data-state="error"] .scene-error{display:grid;place-items:center}
+.bar{height:6px;border-radius:999px;background:var(--surface-2);border:1px solid var(--line);overflow:hidden;margin-top:16px}
+.bar i{display:block;height:100%;width:0;background:var(--brand);border-radius:999px}
+.busy[data-state="done"] .bar,.busy[data-state="error"] .bar{display:none}
+.busy-actions{display:flex;gap:8px;justify-content:center;margin-top:18px;flex-wrap:wrap}
+
+.mini{position:absolute;left:30px;top:12px;width:72px;height:96px;background:#fff;border-radius:6px;box-shadow:0 2px 0 rgba(0,0,0,.05),0 10px 22px rgba(13,92,110,.28);overflow:hidden;padding:13px 9px;display:flex;flex-direction:column;gap:7px;animation:float 2.4s ease-in-out infinite}
+.mini i{display:block;height:5px;border-radius:3px;background:#cfdfe4;transform-origin:left;animation:line 1.6s ease-in-out infinite}
+.mini i:nth-child(1){width:62%;height:8px;background:#0d5c6e}
+.mini i:nth-child(2){width:100%;animation-delay:.12s}
+.mini i:nth-child(3){width:86%;animation-delay:.24s}
+.mini i:nth-child(4){width:100%;animation-delay:.36s}
+.mini i:nth-child(5){width:70%;animation-delay:.48s}
+.mini i:nth-child(6){width:92%;animation-delay:.6s}
+.scan{position:absolute;left:0;right:0;top:0;height:24px;background:linear-gradient(to bottom,transparent,rgba(13,92,110,.3));border-bottom:2px solid rgba(13,92,110,.65);animation:scan 1.5s ease-in-out infinite alternate}
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}
+@keyframes line{0%{transform:scaleX(0)}45%,100%{transform:scaleX(1)}}
+@keyframes scan{from{transform:translateY(-26px)}to{transform:translateY(98px)}}
+
+.scene-print::before{content:"";position:absolute;left:38px;top:5px;width:56px;height:26px;background:#fff;border-radius:3px 3px 0 0;box-shadow:0 2px 8px rgba(0,0,0,.15)}
+.scene-print::after{content:"";position:absolute;left:48px;top:13px;width:36px;height:4px;border-radius:2px;background:#cfdfe4}
+.pr-paper{position:absolute;left:34px;top:22px;width:64px;height:62px;background:#fff;border-radius:3px 3px 6px 6px;box-shadow:0 4px 12px rgba(0,0,0,.2);padding:11px 8px;display:flex;flex-direction:column;gap:6px;animation:feed 1.5s ease-in-out infinite}
+.pr-paper i{display:block;height:4px;border-radius:2px;background:#cfdfe4}
+.pr-paper i:first-child{width:60%;background:#0d5c6e}
+.pr-body{position:absolute;left:10px;top:22px;width:112px;height:50px;background:var(--brand);border-radius:12px;box-shadow:0 10px 20px rgba(13,92,110,.3)}
+.pr-body::before{content:"";position:absolute;left:12px;right:12px;bottom:9px;height:5px;border-radius:3px;background:rgba(0,0,0,.3)}
+.pr-body::after{content:"";position:absolute;right:13px;top:11px;width:7px;height:7px;border-radius:50%;background:#7ef0a8;animation:blink 1s steps(2,jump-none) infinite}
+@keyframes feed{0%{transform:translateY(0)}65%,100%{transform:translateY(42px)}}
+@keyframes blink{0%{opacity:1}100%{opacity:.25}}
+
+.check{display:block}
+.ck-c{fill:var(--brand-soft);stroke:var(--brand);stroke-width:2.5;stroke-dasharray:146;stroke-dashoffset:146;animation:draw .5s ease forwards}
+.ck-p{fill:none;stroke:var(--brand);stroke-width:4;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:40;stroke-dashoffset:40;animation:draw .35s .4s ease forwards}
+@keyframes draw{to{stroke-dashoffset:0}}
+.burst{position:absolute;left:50%;top:50%;width:0;height:0}
+.burst b{position:absolute;left:-3px;top:-3px;width:6px;height:6px;border-radius:50%;background:var(--brand);opacity:0;animation:pop .75s .4s ease-out forwards}
+.burst b.alt{background:#f0b429}
+@keyframes pop{0%{opacity:1;transform:rotate(var(--a)) translateY(-30px) scale(1)}100%{opacity:0;transform:rotate(var(--a)) translateY(-64px) scale(.4)}}
+
+/* off-screen copy of the sheet used to build the PDF */
+.pdf-source{position:fixed;left:-10000px;top:0;width:180mm;background:#fff}
+.pdf-keep{break-inside:avoid}
+
+@media (prefers-reduced-motion: reduce){
+  *,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}
+}
+
 /* responsive */
 @media (max-width:880px){
   .shell{grid-template-columns:minmax(0,1fr);gap:14px}
@@ -169,7 +245,7 @@ input:focus-visible,select:focus-visible,textarea:focus-visible,button:focus-vis
 @page{size:A4;margin:14mm 15mm}
 @media print{
   html,body{background:#fff!important;color:#000}
-  .topbar,.rail,.toast,.no-print,.view-head,.pager{display:none!important}
+  .topbar,.rail,.toast,.no-print,.view-head,.pager,.busy,.pdf-source{display:none!important}
   .shell{display:block;padding:0;max-width:none}
   .view{display:none!important}
   #view-preview{display:block!important}
@@ -192,7 +268,8 @@ input:focus-visible,select:focus-visible,textarea:focus-visible,button:focus-vis
     </div>
   </div>
   <div class="top-actions no-print">
-    <button class="btn primary" type="button" data-action="print">Print / Save as PDF</button>
+    <button class="btn" type="button" data-action="print"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 9V3h10v6"/><rect x="3" y="9" width="18" height="9" rx="2"/><path d="M7 14h10v7H7z"/></svg> Print</button>
+    <button class="btn primary" type="button" data-action="pdf"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12"/><path d="M7 11l5 5 5-5"/><path d="M5 21h14"/></svg> Save as PDF</button>
   </div>
 </header>
 
@@ -353,12 +430,14 @@ input:focus-visible,select:focus-visible,textarea:focus-visible,button:focus-vis
             <h2>Preview and print</h2>
             <p>This is the page that will be printed. Sections with nothing entered are left out.</p>
           </div>
-          <button class="btn primary" type="button" data-action="print">Print / Save as PDF</button>
+          <div class="btn-row">
+            <button class="btn" type="button" data-action="print"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 9V3h10v6"/><rect x="3" y="9" width="18" height="9" rx="2"/><path d="M7 14h10v7H7z"/></svg> Print</button>
+            <button class="btn primary" type="button" data-action="pdf"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12"/><path d="M7 11l5 5 5-5"/><path d="M5 21h14"/></svg> Save as PDF</button>
+          </div>
         </div>
         <ol class="steps">
-          <li>Press Print / Save as PDF (or Ctrl/Cmd + P).</li>
-          <li>Set the destination to Save as PDF, or choose your printer. Paper size A4.</li>
-          <li>Switch off Headers and footers so the browser does not add a web address to the page.</li>
+          <li><b>Save as PDF</b> downloads a file straight to your device. It fetches its PDF maker from the internet, so you need to be online. If that fails, it opens the print dialog instead.</li>
+          <li><b>Print</b> opens your browser's print dialog. Use it for a printer, or for a PDF with text you can select. Choose A4 and switch off Headers and footers.</li>
         </ol>
       </div>
       <div class="paper-wrap" id="paper-wrap">
@@ -367,6 +446,31 @@ input:focus-visible,select:focus-visible,textarea:focus-visible,button:focus-vis
     </section>
 
   </main>
+</div>
+
+<div class="busy" id="busy" hidden role="dialog" aria-modal="true" aria-labelledby="busy-title">
+  <div class="busy-card">
+    <div class="stage" aria-hidden="true">
+      <div class="scene scene-pdf">
+        <div class="mini"><i></i><i></i><i></i><i></i><i></i><i></i><span class="scan"></span></div>
+      </div>
+      <div class="scene scene-print">
+        <div class="pr-paper"><i></i><i></i><i></i><i></i></div>
+        <div class="pr-body"></div>
+      </div>
+      <div class="scene scene-done">
+        <svg class="check" viewBox="0 0 52 52" width="96" height="96"><circle class="ck-c" cx="26" cy="26" r="23"/><path class="ck-p" d="M15 27l8 8 15-17"/></svg>
+        <span class="burst" id="burst"></span>
+      </div>
+      <div class="scene scene-error">
+        <svg viewBox="0 0 52 52" width="96" height="96"><circle cx="26" cy="26" r="23" fill="none" stroke="var(--danger)" stroke-width="2.5"/><path d="M26 15v14M26 36v1" stroke="var(--danger)" stroke-width="4" stroke-linecap="round" fill="none"/></svg>
+      </div>
+    </div>
+    <h2 id="busy-title"></h2>
+    <p id="busy-sub" aria-live="polite"></p>
+    <div class="bar"><i id="busy-bar"></i></div>
+    <div class="busy-actions" id="busy-actions" hidden></div>
+  </div>
 </div>
 
 <div class="toast" id="toast" role="status" hidden></div>
@@ -630,30 +734,35 @@ function addRow(key, over){
   commit();
   var last = $('#list-' + key + ' .row:last-child');
   if(last){
+    last.classList.add('enter');
     var target = (over && over.subject) ? (last.querySelector('[data-k="grade"],[data-k="score"]') || last.querySelector('input,select,textarea')) : last.querySelector('input,select,textarea');
     if(target) target.focus();
   }
 }
 function removeRow(key, id){
-  var arr = getArr(key), i = arr.findIndex(function(r){ return r.id === id; });
-  if(i > -1) arr.splice(i, 1);
-  renderList(key);
-  commit();
-  var add = $('[data-add="' + key + '"]');
-  if(add) add.focus();
+  var rowEl = $('#list-' + key + ' .row[data-id="' + id + '"]');
+  var finish = function(){
+    var arr = getArr(key), i = arr.findIndex(function(r){ return r.id === id; });
+    if(i > -1) arr.splice(i, 1);
+    renderList(key);
+    commit();
+    var add = $('[data-add="' + key + '"]');
+    if(add) add.focus();
+  };
+  if(rowEl && !reduce()){ rowEl.classList.add('leaving'); setTimeout(finish, 190); } else finish();
 }
 
 /* ---------- tags ---------- */
-function renderTags(key){
+function renderTags(key, popLast){
   $('#tags-' + key).innerHTML = state[key].map(function(t, i){
-    return '<span class="tag">' + esc(t) + '<button type="button" data-tag-key="' + key + '" data-tag-i="' + i + '" aria-label="Remove ' + esc(t) + '">×</button></span>';
+    return '<span class="tag' + (popLast && i === state[key].length - 1 ? ' pop' : '') + '">' + esc(t) + '<button type="button" data-tag-key="' + key + '" data-tag-i="' + i + '" aria-label="Remove ' + esc(t) + '">×</button></span>';
   }).join('');
 }
 function addTag(key, el){
   var v = el.value.trim().replace(/,+$/, '').trim();
   if(v && v.length <= 40 && state[key].length < 20 && state[key].indexOf(v) === -1){
     state[key].push(v);
-    renderTags(key);
+    renderTags(key, true);
     commit();
   }
   el.value = '';
@@ -753,7 +862,10 @@ function twoStep(btn, fn){
 }
 
 var ACTIONS = {
-  print: function(){ window.print(); },
+  print: function(){ startPrint(); },
+  pdf: function(){ startPdf(); },
+  'busy-close': function(){ busyClose(); },
+  'busy-print': function(){ busyClose(); setTimeout(function(){ window.print(); }, 260); },
   'photo-pick': function(){ $('#photo-file').click(); },
   'photo-remove': function(){ state.profile.photo = ''; renderPhoto(); commit(); },
   backup: function(){
@@ -972,6 +1084,7 @@ function fitPaper(){
 }
 
 /* ---------- counts, nav, hydrate ---------- */
+var lastCounts = {};
 function updateCounts(){
   var c = {
     igcse: state.igcse.filter(function(r){ return r.subject.trim(); }).length,
@@ -982,7 +1095,14 @@ function updateCounts(){
   };
   Object.keys(c).forEach(function(k){
     var el = $('#count-' + k);
-    if(el){ el.textContent = c[k]; el.hidden = !c[k]; }
+    if(el){
+      el.textContent = c[k];
+      el.hidden = !c[k];
+      if(lastCounts[k] !== undefined && lastCounts[k] !== c[k] && c[k]){
+        el.classList.remove('bump'); void el.offsetWidth; el.classList.add('bump');
+      }
+      lastCounts[k] = c[k];
+    }
   });
 }
 function updateAll(){
@@ -1081,6 +1201,175 @@ function exampleData(){
   d.languages = ['English (fluent)','Urdu (native)','French (beginner)'];
   return d;
 }
+
+/* ---------- print and PDF, with a progress screen ---------- */
+var PDF_LIB = 'https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js';
+var busyEl = $('#busy'), busyTimer, progTimer, pdfLibP = null;
+
+function reduce(){ return !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches); }
+function delay(ms){ return new Promise(function(r){ setTimeout(r, ms); }); }
+function isBusy(){ return busyEl.classList.contains('show'); }
+
+function setBusyState(state, title, sub){
+  busyEl.dataset.state = state;
+  $('#busy-title').textContent = title;
+  $('#busy-sub').textContent = sub;
+  $('#busy-actions').hidden = state === 'working';
+}
+function busyActions(list){
+  $('#busy-actions').innerHTML = list.map(function(a){
+    return '<button type="button" class="btn' + (a[2] ? ' primary' : '') + '" data-action="' + a[1] + '">' + esc(a[0]) + '</button>';
+  }).join('');
+}
+function setBar(pct, ms){
+  var b = $('#busy-bar');
+  b.style.transition = 'width ' + (ms || 0) + 'ms ease-out';
+  b.style.width = pct + '%';
+}
+function busyOpen(mode, title, sub){
+  clearTimeout(busyTimer);
+  clearInterval(progTimer);
+  busyEl.hidden = false;
+  busyEl.dataset.mode = mode;
+  setBusyState('working', title, sub);
+  setBar(0, 0);
+  void busyEl.offsetWidth;
+  busyEl.classList.add('show');
+  document.body.classList.add('is-busy');
+}
+function busyClose(){
+  clearTimeout(busyTimer);
+  clearInterval(progTimer);
+  busyEl.classList.remove('show');
+  document.body.classList.remove('is-busy');
+  setTimeout(function(){ if(!isBusy()) busyEl.hidden = true; }, 240);
+}
+document.addEventListener('keydown', function(e){
+  if(e.key === 'Escape' && isBusy() && busyEl.dataset.state !== 'working') busyClose();
+});
+
+function startPrint(){
+  if(isBusy()) return;
+  var ms = reduce() ? 500 : 1100;
+  busyOpen('print', 'Sending to your printer', 'Getting your profile ready…');
+  setBar(100, ms);
+  busyTimer = setTimeout(function(){
+    busyClose();
+    setTimeout(function(){ window.print(); }, 260);
+  }, ms);
+}
+
+function ensurePdfLib(){
+  if(window.html2pdf) return Promise.resolve();
+  if(pdfLibP) return pdfLibP;
+  pdfLibP = new Promise(function(resolve, reject){
+    var sc = document.createElement('script');
+    var t = setTimeout(function(){ reject(new Error('timeout')); }, 8000);
+    sc.src = PDF_LIB;
+    sc.onload = function(){ clearTimeout(t); window.html2pdf ? resolve() : reject(new Error('missing')); };
+    sc.onerror = function(){ clearTimeout(t); reject(new Error('load')); };
+    document.head.appendChild(sc);
+  });
+  pdfLibP.catch(function(){ pdfLibP = null; });
+  return pdfLibP;
+}
+
+/* keep each heading on the same page as the block that follows it */
+function keepHeadings(root){
+  var sel = '.s-h,.s-h3,.s-grp';
+  Array.prototype.slice.call(root.querySelectorAll(sel)).forEach(function(h){
+    if(h.parentNode.classList.contains('pdf-keep')) return;
+    var group = [h], n = h.nextElementSibling;
+    while(n && n.matches(sel)){ group.push(n); n = n.nextElementSibling; }
+    if(n){
+      group.push(n);
+      if(n.tagName === 'TABLE' && n.nextElementSibling && n.nextElementSibling.matches('.s-note')) group.push(n.nextElementSibling);
+    }
+    var w = document.createElement('div');
+    w.className = 'pdf-keep';
+    h.parentNode.insertBefore(w, h);
+    group.forEach(function(g){ w.appendChild(g); });
+  });
+  Array.prototype.slice.call(root.querySelectorAll('.item')).forEach(function(it){
+    if(it.closest('.pdf-keep')) return;
+    var w = document.createElement('div');
+    w.className = 'pdf-keep';
+    it.parentNode.insertBefore(w, it);
+    w.appendChild(it);
+  });
+}
+function pdfName(){
+  var n = (state.profile.name.trim() || 'Student').replace(/[\\\/:*?"<>|]+/g, '').trim() || 'Student';
+  return n + ' - Student Profile.pdf';
+}
+function makePdf(){
+  renderSheet();
+  var holder = document.createElement('div');
+  holder.className = 'pdf-source';
+  holder.setAttribute('aria-hidden', 'true');
+  var sheet = $('#sheet').cloneNode(true);
+  sheet.removeAttribute('id');
+  holder.appendChild(sheet);
+  keepHeadings(sheet);
+  document.body.appendChild(holder);
+  var file = pdfName();
+  var opt = {
+    margin: [14, 15, 14, 15],
+    filename: file,
+    image: {type:'jpeg', quality:0.96},
+    html2canvas: {scale:2, useCORS:true, backgroundColor:'#ffffff', scrollX:0, scrollY:0, logging:false},
+    jsPDF: {unit:'mm', format:'a4', orientation:'portrait', compress:true},
+    pagebreak: {mode:['css','legacy'], avoid:['.pdf-keep']}
+  };
+  return new Promise(function(resolve, reject){
+    var done = false;
+    var finish = function(err){
+      if(done) return;
+      done = true;
+      clearTimeout(guard);
+      holder.remove();
+      err ? reject(err) : resolve(file);
+    };
+    var guard = setTimeout(function(){ finish(new Error('timeout')); }, 45000);
+    try{
+      window.html2pdf().set(opt).from(sheet).save().then(function(){ finish(); }, function(e){ finish(e || new Error('failed')); });
+    }catch(e){ finish(e); }
+  });
+}
+function startPdf(){
+  if(isBusy()) return;
+  window.scrollTo(0, 0);
+  var started = Date.now(), p = 0;
+  busyOpen('pdf', 'Building your PDF', 'Laying out your pages…');
+  progTimer = setInterval(function(){ p += (88 - p) * 0.07; setBar(p, 170); }, 170);
+  ensurePdfLib()
+    .then(function(){ return (document.fonts && document.fonts.ready) ? document.fonts.ready : null; })
+    .then(function(){ $('#busy-sub').textContent = 'Rendering the pages…'; return makePdf(); })
+    .then(function(file){
+      var minShow = reduce() ? 300 : 1300;
+      return delay(Math.max(0, minShow - (Date.now() - started))).then(function(){ return file; });
+    })
+    .then(function(file){
+      clearInterval(progTimer);
+      setBar(100, 250);
+      return delay(320).then(function(){
+        setBusyState('done', 'PDF saved', file + ' is in your downloads.');
+        busyActions([['Close', 'busy-close', true]]);
+        busyTimer = setTimeout(busyClose, 4000);
+      });
+    })
+    .catch(function(){
+      clearInterval(progTimer);
+      setBusyState('error', 'Could not create the PDF here', 'The PDF maker did not load, which usually means no internet connection. You can still save a PDF from the print dialog.');
+      busyActions([['Open print dialog', 'busy-print', true], ['Close', 'busy-close', false]]);
+    });
+}
+(function(){
+  var html = '';
+  for(var i = 0; i < 10; i++) html += '<b' + (i % 2 ? ' class="alt"' : '') + ' style="--a:' + (i * 36) + 'deg"></b>';
+  $('#burst').innerHTML = html;
+})();
+window.addEventListener('load', function(){ setTimeout(function(){ ensurePdfLib().catch(function(){}); }, 1500); });
 
 /* ---------- start ---------- */
 buildNav();
